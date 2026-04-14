@@ -8,8 +8,6 @@ import re
 app = Flask(__name__)
 CORS(app)
 @app.route("/")
-def index():
-    return render_template("index.html")
 @app.route("/api/test")
 def test():
     return jsonify({"message": "API working"})
