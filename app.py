@@ -7,7 +7,6 @@ import re
 
 app = Flask(__name__)
 CORS(app)
-@app.route("/")
 @app.route("/api/test")
 def test():
     return jsonify({"message": "API working"})
@@ -395,9 +394,10 @@ def call_ai(prompt: str) -> str:
 
 # ─── Routes ──────────────────────────────────────────────────────────────────
 
+
 @app.route("/")
 def index():
-    return send_from_directory("frontend", "index.html")
+    return render_template("index.html")
 
 
 # GET  /api/topics  — list available interview topics
