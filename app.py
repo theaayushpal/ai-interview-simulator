@@ -1,15 +1,15 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import google.generativeai as genai
 import os
 import json
 import re
 
-app = Flask(__name__, static_folder='frontend')
+app = Flask(__name__)
 CORS(app)
 @app.route("/")
-def home():
-    return "Backend is running 🚀"
+def index():
+    return render_template("index.html")
 @app.route("/api/test")
 def test():
     return jsonify({"message": "API working"})
