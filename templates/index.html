@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Interview Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --card: #16161f;
+    --border: #2a2a3a;
+    --accent: #7c3aed;
+    --accent2: #06b6d4;
+    --green: #10b981;
+    --red: #ef4444;
+    --amber: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* animated grid bg */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(124,58,237,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,58,237,.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .glow {
+    position: fixed; top: -200px; right: -200px;
+    width: 600px; height: 600px; z-index: 0;
+    background: radial-gradient(circle, rgba(124,58,237,.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .glow2 {
+    position: fixed; bottom: -200px; left: -200px;
+    width: 500px; height: 500px; z-index: 0;
+    background: radial-gradient(circle, rgba(6,182,212,.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .app {
+    position: relative; z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px 20px 80px;
+  }
+
+  /* ── Header ── */
+  header {
+    text-align: center;
+    margin-bottom: 48px;
+    animation: fadeDown .6s ease both;
+  }
+  .badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent2);
+    border: 1px solid var(--accent2);
+    padding: 3px 10px;
+    border-radius: 2px;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+  }
+  header h1 {
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    font-weight: 800;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #e2e8f0 30%, #7c3aed 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  header p {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 13px;
+    margin-top: 10px;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 20px;
+    animation: fadeUp .5s ease both;
+  }
+  .card-title {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--accent2);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  /* ── Setup panel ── */
+  .setup-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  @media(max-width:540px) { .setup-grid { grid-template-columns: 1fr; } }
+
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; font-family: var(--mono); }
+
+  select, textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border .2s;
+  }
+  select:focus, textarea:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
+
+  /* difficulty pills */
+  .pills { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 6px 14px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all .2s;
+    letter-spacing: 1px;
+  }
+  .pill:hover { border-color: var(--accent); color: var(--text); }
+  .pill.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 24px;
+    border-radius: 8px;
+    border: none;
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 0 20px rgba(124,58,237,.3);
+  }
+  .btn-primary:hover { background: #6d28d9; box-shadow: 0 0 30px rgba(124,58,237,.5); transform: translateY(-1px); }
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .btn-secondary:hover { border-color: var(--accent2); color: var(--accent2); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; transform: none !important; }
+
+  /* ── Question box ── */
+  .question-box {
+    background: var(--surface);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 20px;
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text);
+    margin-bottom: 20px;
+    min-height: 60px;
+  }
+  .question-box.loading { color: var(--muted); font-style: italic; }
+
+  /* ── Score ring ── */
+  .result-header {
+    display: flex; align-items: center; gap: 24px;
+    margin-bottom: 20px;
+  }
+  .score-ring {
+    width: 80px; height: 80px; flex-shrink: 0;
+    position: relative; display: flex; align-items: center; justify-content: center;
+  }
+  .score-ring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+  .score-num {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 700;
+    z-index: 1;
+  }
+  .score-label { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+
+  .feedback-text {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text);
+    padding: 16px;
+    background: var(--surface);
+    border-radius: 8px;
+    margin-bottom: 16px;
+  }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media(max-width:540px) { .two-col { grid-template-columns: 1fr; } }
+
+  .mini-card {
+    padding: 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.6;
+    font-family: var(--mono);
+  }
+  .mini-card.green { background: rgba(16,185,129,.08); border: 1px solid rgba(16,185,129,.2); }
+  .mini-card.red   { background: rgba(239,68,68,.08);  border: 1px solid rgba(239,68,68,.2); }
+  .mini-card h4 { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+  .mini-card.green h4 { color: var(--green); }
+  .mini-card.red   h4 { color: var(--red); }
+  .mini-card ul { padding-left: 16px; }
+  .mini-card li { margin-bottom: 4px; }
+
+  .model-answer {
+    margin-top: 16px;
+    padding: 16px;
+    background: rgba(6,182,212,.05);
+    border: 1px solid rgba(6,182,212,.15);
+    border-radius: 8px;
+  }
+  .model-answer h4 { color: var(--accent2); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; font-family: var(--mono); }
+  .model-answer p { font-size: 13px; line-height: 1.7; color: var(--text); font-family: var(--mono); }
+
+  /* ── Tips ── */
+  .tips-list { list-style: none; }
+  .tips-list li {
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    background: var(--surface);
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.6;
+    border-left: 2px solid var(--accent2);
+    color: var(--text);
+  }
+
+  /* ── Progress bar ── */
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-bottom: 28px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width .4s ease;
+    border-radius: 2px;
+  }
+
+  /* ── Stats strip ── */
+  .stats {
+    display: flex; gap: 16px; flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 18px;
+    text-align: center;
+    flex: 1; min-width: 90px;
+  }
+  .stat-val { font-family: var(--mono); font-size: 20px; font-weight: 700; color: var(--accent); }
+  .stat-lbl { font-size: 11px; color: var(--muted); margin-top: 2px; font-family: var(--mono); }
+
+  /* ── Nav tabs ── */
+  .tabs { display: flex; gap: 4px; margin-bottom: 24px; }
+  .tab {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 1px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    transition: transform .3s ease;
+    z-index: 100;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── Animations ── */
+  @keyframes fadeDown { from { opacity:0; transform: translateY(-20px); } to { opacity:1; transform: none; } }
+  @keyframes fadeUp   { from { opacity:0; transform: translateY(20px);  } to { opacity:1; transform: none; } }
+  @keyframes pulse    { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+  .pulsing { animation: pulse 1.4s infinite; }
+
+  /* ── API Status ── */
+  .api-status {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    margin-top: 8px;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+  .dot.off { background: var(--amber); }
+</style>
+</head>
+<body>
+<div class="glow"></div>
+<div class="glow2"></div>
+
+<div class="app">
+  <header>
+    <div class="badge">⚡ AI Powered</div>
+    <h1>Interview<br>Simulator</h1>
+    <p>// Sharpen your skills. Ace the interview.</p>
+    <div class="api-status">
+      <span class="dot" id="apiDot"></span>
+      <span id="apiStatusText">Connecting to backend…</span>
+    </div>
+  </header>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat"><div class="stat-val" id="statQ">0</div><div class="stat-lbl">QUESTIONS</div></div>
+    <div class="stat"><div class="stat-val" id="statAvg">—</div><div class="stat-lbl">AVG SCORE</div></div>
+    <div class="stat"><div class="stat-val" id="statBest">—</div><div class="stat-lbl">BEST SCORE</div></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('practice')">PRACTICE</button>
+    <button class="tab" onclick="switchTab('tips')">TIPS</button>
+    <button class="tab" onclick="switchTab('about')">API INFO</button>
+  </div>
+
+  <!-- PRACTICE tab -->
+  <div class="tab-panel active" id="tab-practice">
+
+    <!-- Setup -->
+    <div class="card" style="animation-delay:.1s">
+      <div class="card-title">// 01 — Configure Session</div>
+      <div class="setup-grid">
+        <div>
+          <label>TOPIC</label>
+          <select id="topicSelect">
+            <option value="">Loading topics…</option>
+          </select>
+        </div>
+        <div>
+          <label>DIFFICULTY</label>
+          <div class="pills">
+            <button class="pill active" data-d="easy">Easy</button>
+            <button class="pill" data-d="medium">Medium</button>
+            <button class="pill" data-d="hard">Hard</button>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="genBtn" onclick="generateQuestion()">
+        <span>Generate Question</span> <span>→</span>
+      </button>
+    </div>
+
+    <!-- Question -->
+    <div class="card" style="animation-delay:.2s">
+      <div class="card-title">// 02 — Question</div>
+      <div class="question-box" id="questionBox">Hit "Generate Question" to begin your session.</div>
+    </div>
+
+    <!-- Answer -->
+    <div class="card" style="animation-delay:.3s">
+      <div class="card-title">// 03 — Your Answer</div>
+      <textarea id="answerBox" placeholder="Type your answer here…" rows="6"></textarea>
+      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+        <button class="btn btn-primary" id="evalBtn" onclick="evaluateAnswer()" disabled>
+          <span>Evaluate Answer</span> <span>✓</span>
+        </button>
+        <button class="btn btn-secondary" onclick="resetSession()">Reset</button>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="card" id="resultsCard" style="display:none;animation-delay:.1s">
+      <div class="card-title">// 04 — Feedback</div>
+      <div class="result-header">
+        <div class="score-ring">
+          <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="40" cy="40" r="34" stroke="#2a2a3a" stroke-width="6"/>
+            <circle cx="40" cy="40" r="34" stroke="url(#sg)" stroke-width="6"
+              stroke-linecap="round" stroke-dasharray="213.6"
+              id="scoreCircle" stroke-dashoffset="213.6"/>
+            <defs>
+              <linearGradient id="sg" x1="0" y1="0" x2="80" y2="0">
+                <stop offset="0%" stop-color="#7c3aed"/>
+                <stop offset="100%" stop-color="#06b6d4"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <div>
+            <div class="score-num" id="scoreNum">—</div>
+            <div class="score-label">/10</div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:18px;font-weight:700;" id="scoreVerdict"></div>
+          <div style="font-size:12px;color:var(--muted);font-family:var(--mono);margin-top:4px;" id="scoreMeta"></div>
+        </div>
+      </div>
+
+      <div class="feedback-text" id="feedbackText"></div>
+
+      <div class="two-col">
+        <div class="mini-card green">
+          <h4>✓ Strengths</h4>
+          <ul id="strengthsList"></ul>
+        </div>
+        <div class="mini-card red">
+          <h4>↑ Improvements</h4>
+          <ul id="improvList"></ul>
+        </div>
+      </div>
+
+      <div class="model-answer">
+        <h4>Model Answer</h4>
+        <p id="modelAnswerText"></p>
+      </div>
+    </div>
+
+  </div><!-- /practice -->
+
+  <!-- TIPS tab -->
+  <div class="tab-panel" id="tab-tips">
+    <div class="card">
+      <div class="card-title">// Interview Tips</div>
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+        <select id="tipsTopic" style="max-width:200px;">
+          <option value="">Loading…</option>
+        </select>
+        <button class="btn btn-primary" onclick="loadTips()">Load Tips</button>
+      </div>
+      <ul class="tips-list" id="tipsList">
+        <li>Select a topic and click "Load Tips"</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ABOUT tab -->
+  <div class="tab-panel" id="tab-about">
+    <div class="card">
+      <div class="card-title">// API Routes</div>
+      <div style="font-family:var(--mono);font-size:13px;line-height:2;">
+        <div><span style="color:var(--accent2)">GET</span>  &nbsp;/api/topics &nbsp;— list topics</div>
+        <div><span style="color:var(--green)">POST</span> /api/question &nbsp;— generate question</div>
+        <div><span style="color:var(--green)">POST</span> /api/evaluate &nbsp;— evaluate answer</div>
+        <div><span style="color:var(--accent2)">GET</span>  &nbsp;/api/tips?topic=… — get tips</div>
+        <div><span style="color:var(--red)">DELETE</span> /api/session &nbsp;— end session</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">// Tech Stack</div>
+      <div style="font-family:var(--mono);font-size:13px;line-height:2;color:var(--muted)">
+        Backend: Python + Flask + Flask-CORS<br>
+        AI: Google Gemini 1.5 Flash (via REST)<br>
+        Frontend: Vanilla HTML / CSS / JS<br>
+        Integration: fetch() API calls to /api/*
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<div id="toast"></div>
+
+<script>
+const BASE = '';
+let currentQuestion = '';
+let currentTopic = '';
+let difficulty = 'easy';
+let scores = [];
+
+// ── Full question bank (mirrors app.py) ──────────────────────────────────────
+const QUESTION_BANK = {
+  "python": {
+    easy: [
+      "What is the difference between a list and a tuple in Python?",
+      "What are Python's built-in data types?",
+      "What is the difference between == and is in Python?",
+      "How do you create a virtual environment in Python?",
+      "What is PEP 8?",
+      "What is the difference between append() and extend() in a list?",
+      "What is a Python dictionary and how do you access values?",
+      "What does the len() function do?",
+      "How do you handle exceptions in Python?",
+      "What is the difference between break and continue?",
+    ],
+    medium: [
+      "What is a decorator in Python? Write an example.",
+      "Explain list comprehensions with an example.",
+      "What is the difference between *args and **kwargs?",
+      "What are lambda functions? When would you use one?",
+      "Explain the concept of generators and yield in Python.",
+      "What is the Global Interpreter Lock (GIL)?",
+      "What is the difference between shallow copy and deep copy?",
+      "How does Python's garbage collection work?",
+      "What are Python's __init__ and __str__ dunder methods?",
+      "Explain the difference between @staticmethod and @classmethod.",
+    ],
+    hard: [
+      "Explain Python's memory management and reference counting.",
+      "What is a metaclass in Python? Give a use case.",
+      "How does the asyncio event loop work in Python?",
+      "Explain the MRO (Method Resolution Order) in Python's multiple inheritance.",
+      "What are context managers and how do you implement one using __enter__ and __exit__?",
+      "How would you profile and optimize a slow Python script?",
+      "Explain Python descriptors and how they power @property.",
+      "What is the difference between multiprocessing and multithreading in Python?",
+      "How do you implement a thread-safe singleton in Python?",
+      "Explain coroutines vs threads vs processes in Python.",
+    ],
+  },
+  "data structures": {
+    easy: [
+      "What is the difference between an array and a linked list?",
+      "What is a stack? Name two real-life examples.",
+      "What is a queue? How is it different from a stack?",
+      "What is Big-O notation and why does it matter?",
+      "What is a binary search? What is its time complexity?",
+      "What is a hash table? How does it handle collisions?",
+      "What is the difference between BFS and DFS?",
+      "What is a tree? Define root, leaf, and height.",
+      "What is a circular linked list?",
+      "What is the time complexity of inserting into a Python list?",
+    ],
+    medium: [
+      "Explain how a hash map works internally.",
+      "What is a binary search tree? How do you check if a BST is valid?",
+      "What is the difference between a min-heap and a max-heap?",
+      "How would you implement a queue using two stacks?",
+      "What is dynamic programming? Explain with the Fibonacci example.",
+      "What is the difference between stable and unstable sorting algorithms?",
+      "Explain the merge sort algorithm and its time complexity.",
+      "What is a graph? Explain adjacency list vs adjacency matrix.",
+      "How does quicksort work? What is its worst-case time complexity?",
+      "What is a trie? What is it used for?",
+    ],
+    hard: [
+      "Implement LRU Cache using a doubly linked list and hash map.",
+      "Explain Dijkstra's algorithm and its time complexity.",
+      "What is a B-tree and why is it used in databases?",
+      "How would you detect a cycle in a directed graph?",
+      "Explain the Union-Find data structure and its applications.",
+      "What is the difference between Prim's and Kruskal's algorithm?",
+      "Explain how a red-black tree maintains balance.",
+      "What is a segment tree? When would you use it over a Fenwick tree?",
+      "How would you serialize and deserialize a binary tree?",
+      "Explain Floyd-Warshall algorithm and when to use it over Dijkstra's.",
+    ],
+  },
+  "web development": {
+    easy: [
+      "What is the difference between GET and POST HTTP methods?",
+      "What does HTML stand for and what is its purpose?",
+      "What is CSS and how does it differ from HTML?",
+      "What is a cookie? How is it different from localStorage?",
+      "What is the difference between HTTP and HTTPS?",
+      "What is a REST API?",
+      "What does a 404 error mean? What about 500?",
+      "What is responsive design?",
+      "What is the DOM (Document Object Model)?",
+      "What is the difference between div and span?",
+    ],
+    medium: [
+      "What is CORS and why is it needed?",
+      "Explain the difference between authentication and authorization.",
+      "What is a JWT (JSON Web Token)? How does it work?",
+      "What is the difference between SQL and NoSQL databases?",
+      "Explain the event loop in JavaScript.",
+      "What is a RESTful API? What are its key constraints?",
+      "What is the difference between Promise and async/await in JS?",
+      "What is webpack and why is it used?",
+      "Explain the CSS box model.",
+      "What is server-side rendering vs client-side rendering?",
+    ],
+    hard: [
+      "How would you design a URL shortener like bit.ly?",
+      "Explain how HTTPS works, including the TLS handshake.",
+      "What is the CAP theorem in distributed systems?",
+      "How do you prevent SQL injection and XSS attacks?",
+      "What is WebSockets and how does it differ from HTTP polling?",
+      "How would you scale a web application to handle millions of users?",
+      "Explain OAuth 2.0 flow in detail.",
+      "What is a CDN and how does it improve performance?",
+      "What are microservices? What are the tradeoffs vs monolith?",
+      "How does browser caching work and how do you control it?",
+    ],
+  },
+  "flask & backend": {
+    easy: [
+      "What is Flask and how is it different from Django?",
+      "How do you define a route in Flask?",
+      "What does @app.route() do in Flask?",
+      "How do you return JSON from a Flask route?",
+      "What is request.get_json() used for in Flask?",
+      "What HTTP methods does Flask support?",
+      "What is Flask-CORS and why do we use it?",
+      "What does app.run(debug=True) do?",
+      "How do you read URL query parameters in Flask?",
+      "What is a virtual environment and why use one with Flask?",
+    ],
+    medium: [
+      "What is the difference between request.args, request.form, and request.json in Flask?",
+      "How do you handle 404 and 500 errors in Flask?",
+      "What is a Blueprint in Flask and when would you use it?",
+      "How do you connect Flask to a SQLite database using SQLAlchemy?",
+      "Explain how Flask handles request context and application context.",
+      "How would you add authentication to a Flask API?",
+      "What is middleware in Flask? Give an example using before_request.",
+      "How do you deploy a Flask app to production using gunicorn?",
+      "What is the difference between jsonify() and json.dumps() in Flask?",
+      "How do you test Flask routes using pytest?",
+    ],
+    hard: [
+      "How would you implement rate limiting in a Flask API?",
+      "How do you handle file uploads securely in Flask?",
+      "Explain how to implement JWT authentication from scratch in Flask.",
+      "How would you structure a large Flask application using the Application Factory pattern?",
+      "How do you implement background tasks in Flask using Celery?",
+      "What are the security considerations when deploying a Flask API?",
+      "How would you implement database migrations in Flask using Alembic?",
+      "Explain caching strategies you can use with Flask.",
+      "How would you build a real-time feature in Flask using Server-Sent Events?",
+      "How do you handle concurrent requests in Flask with async support?",
+    ],
+  },
+  "oops & design": {
+    easy: [
+      "What are the four pillars of Object-Oriented Programming?",
+      "What is the difference between a class and an object?",
+      "What is inheritance and why is it useful?",
+      "What is encapsulation? Give a real-world example.",
+      "What is polymorphism? Give an example.",
+      "What is an abstract class?",
+      "What is the difference between method overloading and method overriding?",
+      "What is a constructor?",
+      "What is the difference between public, private, and protected access modifiers?",
+      "What is an interface and how does it differ from an abstract class?",
+    ],
+    medium: [
+      "Explain the SOLID principles in OOP.",
+      "What is the Singleton design pattern? When would you use it?",
+      "What is the Factory design pattern?",
+      "What is the Observer design pattern? Give a real-world example.",
+      "What is composition over inheritance?",
+      "What is the Decorator design pattern (not Python decorator)?",
+      "Explain the difference between coupling and cohesion.",
+      "What is the MVC (Model-View-Controller) pattern?",
+      "What is dependency injection and why is it useful?",
+      "What is the difference between aggregation and composition in OOP?",
+    ],
+    hard: [
+      "Explain the Strategy design pattern with a real example.",
+      "How would you refactor a God Object into smaller, cohesive classes?",
+      "What is the difference between the Proxy and Decorator patterns?",
+      "Explain the CQRS (Command Query Responsibility Segregation) pattern.",
+      "How does the Repository pattern help in separating concerns?",
+      "What is eventual consistency and how does it affect design?",
+      "Compare the Adapter, Facade, and Bridge design patterns.",
+      "How would you design a parking lot system using OOP?",
+      "Explain the Event Sourcing pattern.",
+      "What is Domain-Driven Design (DDD)?",
+    ],
+  },
+  "databases": {
+    easy: [
+      "What is the difference between SQL and NoSQL?",
+      "What is a primary key? What is a foreign key?",
+      "What does CRUD stand for?",
+      "What is a JOIN in SQL? Name its types.",
+      "What is normalization? What are 1NF, 2NF, 3NF?",
+      "What is an index in a database and why is it used?",
+      "What is the difference between DELETE, TRUNCATE, and DROP?",
+      "What is a transaction in a database?",
+      "What does ACID stand for in databases?",
+      "What is the difference between WHERE and HAVING in SQL?",
+    ],
+    medium: [
+      "Explain database indexing strategies — B-tree vs hash index.",
+      "What is a stored procedure and when would you use one?",
+      "What is the N+1 query problem and how do you fix it?",
+      "Explain optimistic vs pessimistic locking.",
+      "What is database sharding and when would you use it?",
+      "Explain the difference between INNER JOIN and OUTER JOIN.",
+      "What is a view in SQL and when is it useful?",
+      "What is the difference between clustered and non-clustered indexes?",
+      "How does Redis differ from a relational database?",
+      "What are triggers in SQL?",
+    ],
+    hard: [
+      "How would you design a database schema for a Twitter-like app?",
+      "Explain the two-phase commit protocol.",
+      "What is the difference between CAP theorem and PACELC?",
+      "How would you handle millions of read requests on a single database?",
+      "What is a write-ahead log (WAL) in databases?",
+      "Explain MVCC (Multi-Version Concurrency Control).",
+      "How does consistent hashing work in distributed databases?",
+      "What is a materialized view and how does it differ from a regular view?",
+      "How would you design a database for a ride-sharing app like Uber?",
+      "Explain database replication strategies: master-slave vs master-master.",
+    ],
+  },
+  "hr & behavioural": {
+    easy: [
+      "Tell me about yourself.",
+      "Why do you want to work here?",
+      "What are your greatest strengths?",
+      "What is your biggest weakness?",
+      "Where do you see yourself in 5 years?",
+      "Why did you choose computer science/engineering?",
+      "Describe a project you are proud of.",
+      "What motivates you to work hard?",
+      "How do you handle stress and pressure?",
+      "Are you a team player or do you prefer working alone?",
+    ],
+    medium: [
+      "Describe a time you faced a conflict with a teammate and how you resolved it.",
+      "Tell me about a time you failed and what you learned from it.",
+      "Describe a challenging problem you solved creatively.",
+      "Give an example of when you had to meet a tight deadline.",
+      "Tell me about a time you had to learn something new quickly.",
+      "How do you prioritize tasks when you have multiple deadlines?",
+      "Describe a time you showed leadership.",
+      "Tell me about a time you disagreed with your manager. What did you do?",
+      "Give an example of how you contributed to a team's success.",
+      "Describe a situation where you had to adapt to a major change.",
+    ],
+    hard: [
+      "Where do you see the field of software engineering in 10 years?",
+      "How would you handle a critical bug discovered right before a product launch?",
+      "Describe a time you had to make a difficult decision with incomplete information.",
+      "How do you stay updated with rapidly changing technology?",
+      "Tell me about a time you had to convince stakeholders of a technical decision they initially opposed.",
+      "How would you handle a situation where your team's code quality is consistently poor?",
+      "Describe your approach to mentoring a junior developer.",
+      "Tell me about a time you sacrificed code quality for speed. How did you manage the technical debt?",
+      "How do you evaluate whether a new technology is worth adopting?",
+      "Describe a time you significantly improved a process or system.",
+    ],
+  },
+};
+
+// ── Model answers & feedback bank ────────────────────────────────────────────
+const FEEDBACK_BANK = {
+  "python": {
+    strengths: ["Good understanding of Python syntax", "Mentioned key concepts", "Clear explanation"],
+    improvements: ["Add a code example to demonstrate", "Mention edge cases or exceptions", "Compare with alternatives"],
+    model_answers: {
+      easy: "A strong answer defines the concept clearly, gives a one-line example, and mentions when to use it. E.g. for list vs tuple: 'Lists are mutable (can change), tuples are immutable (fixed). Use tuples for fixed data like coordinates.'",
+      medium: "Structure your answer as: 1) Define the concept, 2) Show a short code snippet, 3) Mention a real use case. E.g. for decorators: define, show @timer example, say it's used for logging/auth.",
+      hard: "For hard questions, show depth: define, explain internals, give trade-offs, mention real-world implications. E.g. for GIL: explain it prevents true parallelism in CPython, affects CPU-bound tasks, workaround is multiprocessing.",
+    }
+  },
+  "data structures": {
+    strengths: ["Identified the right data structure", "Mentioned time complexity", "Clear logical thinking"],
+    improvements: ["State the time and space complexity explicitly", "Give a concrete real-world use case", "Mention trade-offs vs alternatives"],
+    model_answers: {
+      easy: "Always state: 1) Definition, 2) Time complexity for key operations, 3) Real example. E.g. Stack: LIFO structure, push/pop O(1), used in undo operations and function call stack.",
+      medium: "Go deeper: explain the internal mechanism, walk through an example step by step, and compare with at least one alternative approach.",
+      hard: "Show mastery: explain the algorithm/structure, derive complexity, discuss space trade-offs, mention when NOT to use it, and any optimizations.",
+    }
+  },
+  "web development": {
+    strengths: ["Good grasp of web fundamentals", "Mentioned relevant protocols", "Practical understanding shown"],
+    improvements: ["Mention specific HTTP status codes where relevant", "Give a real-world example or scenario", "Discuss security implications"],
+    model_answers: {
+      easy: "Cover: what it is, how it works briefly, and a real example. E.g. GET vs POST: GET fetches data (params in URL, cacheable), POST sends data (in body, not cached, used for forms/login).",
+      medium: "Explain the mechanism, show a flow or example, discuss when to use it. E.g. JWT: header.payload.signature, stateless auth, signed not encrypted, sent in Authorization header.",
+      hard: "Address the design/architecture, trade-offs, scalability, and security. Structure your answer systematically.",
+    }
+  },
+  "flask & backend": {
+    strengths: ["Understands Flask routing", "Knows HTTP methods", "Good API design awareness"],
+    improvements: ["Mention the specific decorator or method used", "Show a short code snippet if possible", "Discuss error handling"],
+    model_answers: {
+      easy: "Always connect theory to Flask code. E.g. @app.route('/users', methods=['GET']) maps the URL /users to a function that returns jsonify({'users': [...]}) with status 200.",
+      medium: "Explain Flask-specific behaviour: how request object works, what request.get_json() returns, how to structure response with status codes.",
+      hard: "Show production-level thinking: security, scalability, error handling, logging, environment variables for secrets.",
+    }
+  },
+  "oops & design": {
+    strengths: ["Good conceptual understanding", "Used correct terminology", "Logical structure in answer"],
+    improvements: ["Give a concrete real-world analogy", "Write pseudo-code or a class diagram", "Explain WHY the principle matters"],
+    model_answers: {
+      easy: "Cover all 4 pillars: Encapsulation (hide internals), Inheritance (reuse), Polymorphism (same interface different behaviour), Abstraction (hide complexity). Give one example each.",
+      medium: "For design patterns: name it, state the problem it solves, show structure (classes involved), give a real use case.",
+      hard: "Show architectural thinking. Discuss trade-offs, when NOT to use the pattern, and how it interacts with other patterns.",
+    }
+  },
+  "databases": {
+    strengths: ["Good SQL knowledge", "Understands data relationships", "Mentioned performance considerations"],
+    improvements: ["Mention specific SQL syntax", "Discuss indexing implications", "Address performance and scalability"],
+    model_answers: {
+      easy: "Always give SQL syntax as example. E.g. for INNER JOIN: 'Returns rows where condition matches in both tables. SELECT * FROM orders INNER JOIN customers ON orders.cust_id = customers.id'",
+      medium: "Explain the mechanism and trade-offs. E.g. index speeds up reads but slows writes because the index B-tree must be updated on every INSERT/UPDATE/DELETE.",
+      hard: "Think at scale: sharding strategies, replication lag, consistency models, real-world examples like how Twitter or Uber might solve this.",
+    }
+  },
+  "hr & behavioural": {
+    strengths: ["Showed self-awareness", "Gave a relevant example", "Clear and confident communication"],
+    improvements: ["Use the STAR method: Situation, Task, Action, Result", "Quantify your impact where possible", "Keep it concise — 60 to 90 seconds per answer"],
+    model_answers: {
+      easy: "For 'Tell me about yourself': Name + degree + year + 1-2 projects + key skills + why this role. Practice until it flows naturally in 60-90 seconds.",
+      medium: "Use STAR: Set the Situation (2 sentences), explain your Task, describe your Action in detail, end with the measurable Result.",
+      hard: "Show strategic thinking and maturity. Acknowledge complexity, explain your reasoning process, and demonstrate what you learned.",
+    }
+  },
+};
+
+const TIPS_BANK = {
+  "python": [
+    "Master list/dict/set comprehensions — asked in almost every Python interview.",
+    "Know mutability: mutable (list, dict, set) vs immutable (int, str, tuple, frozenset).",
+    "Practice decorators and generators — favourite medium/hard topics.",
+    "Understand deepcopy vs copy — a classic gotcha question.",
+    "Be comfortable with OOP: __init__, __str__, @property, classmethods, staticmethods.",
+    "Know *args and **kwargs inside out — very commonly tested.",
+    "Write Pythonic code — avoid C-style loops when list comprehensions work.",
+  ],
+  "data structures": [
+    "Know Big-O for all operations: array, linked list, hash map, BST, heap.",
+    "Practice implementing linked list, stack, queue from scratch.",
+    "Understand when to use each: hash map for O(1) lookup, heap for min/max queries.",
+    "Binary search appears in many non-obvious problems — learn to spot it.",
+    "DFS and BFS are fundamental — practice both recursive and iterative versions.",
+    "Dynamic programming = recursion + memoization. Start Fibonacci, then knapsack.",
+    "For graphs: always clarify directed/undirected, weighted, can have cycles?",
+  ],
+  "web development": [
+    "Understand the full HTTP request-response cycle — everything builds on this.",
+    "Know HTTP status codes: 200 OK, 201 Created, 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 500 Server Error.",
+    "REST: statelessness, uniform interface, resource-based URLs — memorize these.",
+    "CSS specificity and box model trip many candidates — review them carefully.",
+    "JavaScript async (callbacks, Promises, async/await) is tested in every frontend role.",
+    "Security: always know XSS, CSRF, SQL injection and their mitigations.",
+    "Practice designing simple systems (URL shortener, chat app).",
+  ],
+  "flask & backend": [
+    "Know all HTTP methods: GET (read), POST (create), PUT (full update), PATCH (partial), DELETE (remove).",
+    "Understand Flask's request object: request.args, request.json, request.form, request.files.",
+    "Flask-CORS is essential for frontend-backend separation — know why browsers block cross-origin requests.",
+    "Always validate and sanitize input — never trust user data.",
+    "Use environment variables for secrets — never hardcode API keys or passwords.",
+    "Know how to structure responses: status code + JSON body + headers.",
+    "Practice error handling with @app.errorhandler for 404 and 500.",
+  ],
+  "oops & design": [
+    "Memorize SOLID: Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion.",
+    "Top 3 patterns to know cold: Singleton, Factory, Observer.",
+    "Prefer composition over inheritance for more flexible, testable code.",
+    "For system design: always start by clarifying requirements before jumping to solutions.",
+    "MVC is fundamental — know how Model, View, and Controller interact.",
+    "Practice drawing class diagrams — whiteboard design questions are common.",
+    "Dependency injection makes code testable — understand why it matters.",
+  ],
+  "databases": [
+    "Master SQL JOINs (INNER, LEFT, RIGHT, FULL) — draw Venn diagrams to remember.",
+    "Indexes speed up reads but slow writes — always a trade-off.",
+    "ACID: Atomicity, Consistency, Isolation, Durability — memorize and understand each.",
+    "Know when NoSQL (flexible schema, high scale) vs SQL (relationships, ACID).",
+    "N+1 problem is classic — know how to fix with JOIN or eager loading.",
+    "Practice GROUP BY, HAVING, subqueries, and window functions in SQL.",
+    "Normalized = less redundancy; denormalized = faster reads. Know when to pick each.",
+  ],
+  "hr & behavioural": [
+    "Use STAR method for every behavioural question: Situation, Task, Action, Result.",
+    "Prepare 5-6 strong stories from projects — they can be adapted to many questions.",
+    "Research the company: product, mission, recent news, and values before any interview.",
+    "Practice 'Tell me about yourself' until it flows naturally — it almost always opens.",
+    "Weakness: be genuine, show self-awareness, and always mention what you are doing to improve.",
+    "Always prepare 2-3 questions to ask the interviewer — it shows real interest.",
+    "Body language matters even in online interviews: eye contact, posture, smile.",
+  ],
+};
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const names = ['practice', 'tips', 'about'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ── Difficulty pills ───────────────────────────────────────────────────────────
+document.querySelectorAll('.pill').forEach(p => {
+  p.addEventListener('click', () => {
+    document.querySelectorAll('.pill').forEach(x => x.classList.remove('active'));
+    p.classList.add('active');
+    difficulty = p.dataset.d;
+  });
+});
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── Topics ────────────────────────────────────────────────────────────────────
+const TOPICS = Object.keys(QUESTION_BANK);
+
+function populateTopics() {
+  const opts = TOPICS.map(t =>
+    `<option value="${t}">${t.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</option>`
+  ).join('');
+  document.getElementById('topicSelect').innerHTML = opts;
+  document.getElementById('tipsTopic').innerHTML = opts;
+}
+
+async function loadTopics() {
+  populateTopics();
+  try {
+    const res = await fetch(BASE + '/api/topics', { signal: AbortSignal.timeout(2000) });
+    await res.json();
+    document.getElementById('apiDot').classList.remove('off');
+    document.getElementById('apiStatusText').textContent = 'Flask backend connected!';
+  } catch (e) {
+    document.getElementById('apiDot').classList.add('off');
+    document.getElementById('apiStatusText').textContent = 'Running in standalone mode (Flask not required)';
+  }
+}
+
+// ── Generate question (fully local, no Flask needed) ──────────────────────────
+async function generateQuestion() {
+  const topic = document.getElementById('topicSelect').value;
+  if (!topic) return showToast('Pick a topic first.');
+
+  const btn = document.getElementById('genBtn');
+  const box = document.getElementById('questionBox');
+  btn.disabled = true;
+  document.getElementById('resultsCard').style.display = 'none';
+  document.getElementById('answerBox').value = '';
+  document.getElementById('evalBtn').disabled = true;
+
+  box.classList.add('loading', 'pulsing');
+  box.textContent = 'Generating question...';
+
+  // Try Flask first, fall back to local bank
+  let question = null;
+  try {
+    const res = await fetch(BASE + '/api/question', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ topic, difficulty }),
+      signal: AbortSignal.timeout(3000),
+    });
+    const data = await res.json();
+    question = data.question;
+  } catch (e) {
+    // Flask not running — use local bank
+    const bank = QUESTION_BANK[topic]?.[difficulty] || QUESTION_BANK[topic]?.medium || [];
+    if (bank.length === 0) { box.textContent = 'No questions found for this topic.'; btn.disabled = false; return; }
+    question = bank[Math.floor(Math.random() * bank.length)];
+  }
+
+  currentQuestion = question;
+  currentTopic = topic;
+  box.textContent = question;
+  box.classList.remove('loading', 'pulsing');
+  document.getElementById('evalBtn').disabled = false;
+  btn.disabled = false;
+  showToast('Question ready!');
+}
+
+// ── Evaluate answer (fully local, no Flask needed) ────────────────────────────
+async function evaluateAnswer() {
+  const answer = document.getElementById('answerBox').value.trim();
+  if (!answer) return showToast('Type your answer first.');
+
+  const btn = document.getElementById('evalBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="pulsing">Evaluating...</span>';
+
+  let result = null;
+
+  // Try Flask first
+  try {
+    const res = await fetch(BASE + '/api/evaluate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: currentQuestion, answer, topic: currentTopic }),
+      signal: AbortSignal.timeout(5000),
+    });
+    result = await res.json();
+  } catch (e) {
+    // Local evaluation based on answer length and keywords
+    result = localEvaluate(currentQuestion, answer, currentTopic, difficulty);
+  }
+
+  renderResult(result);
+  scores.push(result.score);
+  updateStats();
+  btn.disabled = false;
+  btn.innerHTML = '<span>Evaluate Answer</span> <span>&#10003;</span>';
+}
+
+function localEvaluate(question, answer, topic, diff) {
+  const wordCount = answer.trim().split(/\s+/).length;
+  const fb = FEEDBACK_BANK[topic] || FEEDBACK_BANK["python"];
+
+  // Score based on answer length & substance
+  let score;
+  if (wordCount < 10) score = 2;
+  else if (wordCount < 25) score = 4;
+  else if (wordCount < 50) score = 6;
+  else if (wordCount < 100) score = 7;
+  else score = 8;
+
+  // Bonus if answer contains the question's keywords
+  const qWords = question.toLowerCase().replace(/[^a-z0-9 ]/g, '').split(' ').filter(w => w.length > 4);
+  const aLower = answer.toLowerCase();
+  const hits = qWords.filter(w => aLower.includes(w)).length;
+  score = Math.min(10, score + Math.floor(hits / 2));
+
+  const modelAns = fb.model_answers?.[diff] || fb.model_answers?.easy || "Structure your answer: define the concept, give an example, mention trade-offs.";
+
+  return {
+    score,
+    feedback: score >= 7
+      ? "Good answer! You covered the key points. To score even higher, add a concrete example or mention trade-offs."
+      : score >= 5
+      ? "Decent attempt. Your answer touches the right areas but needs more depth and structure. Try the STAR method or define-example-tradeoff pattern."
+      : "This answer needs more development. Focus on clearly defining the concept first, then backing it up with an example.",
+    strengths: fb.strengths.slice(0, 2),
+    improvements: fb.improvements.slice(0, 3),
+    model_answer: modelAns,
+  };
+}
+
+// ── Render result ─────────────────────────────────────────────────────────────
+function renderResult(d) {
+  const card = document.getElementById('resultsCard');
+  card.style.display = 'block';
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  const circ = document.getElementById('scoreCircle');
+  const total = 213.6;
+  circ.style.strokeDashoffset = total;
+  setTimeout(() => {
+    circ.style.transition = 'stroke-dashoffset 1s ease';
+    circ.style.strokeDashoffset = total * (1 - d.score / 10);
+  }, 100);
+
+  document.getElementById('scoreNum').textContent = d.score;
+  document.getElementById('scoreVerdict').textContent =
+    d.score >= 8 ? 'Excellent!' : d.score >= 6 ? 'Good' : d.score >= 4 ? 'Needs Work' : 'Keep Practicing';
+  document.getElementById('scoreMeta').textContent = `Topic: ${currentTopic} | Difficulty: ${difficulty}`;
+  document.getElementById('feedbackText').textContent = d.feedback || '';
+  document.getElementById('strengthsList').innerHTML = (d.strengths || []).map(s => `<li>${s}</li>`).join('');
+  document.getElementById('improvList').innerHTML = (d.improvements || []).map(i => `<li>${i}</li>`).join('');
+  document.getElementById('modelAnswerText').textContent = d.model_answer || '';
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+function updateStats() {
+  document.getElementById('statQ').textContent = scores.length;
+  if (scores.length) {
+    document.getElementById('statAvg').textContent = (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1);
+    document.getElementById('statBest').textContent = Math.max(...scores);
+  }
+}
+
+// ── Tips (fully local) ────────────────────────────────────────────────────────
+async function loadTips() {
+  const topic = document.getElementById('tipsTopic').value;
+  if (!topic) return;
+  const list = document.getElementById('tipsList');
+  list.innerHTML = '<li class="pulsing">Loading tips...</li>';
+
+  let tips = null;
+  try {
+    const res = await fetch(BASE + `/api/tips?topic=${encodeURIComponent(topic)}`, {
+      signal: AbortSignal.timeout(3000),
+    });
+    const data = await res.json();
+    tips = data.tips;
+  } catch (e) {
+    tips = TIPS_BANK[topic] || ["Study this topic's fundamentals.", "Practice explaining concepts aloud.", "Use the STAR method for behavioural questions.", "Prepare real examples from your projects.", "Ask clarifying questions before answering."];
+  }
+  list.innerHTML = tips.map(t => `<li>${t}</li>`).join('');
+}
+
+// ── Reset ─────────────────────────────────────────────────────────────────────
+async function resetSession() {
+  try { await fetch(BASE + '/api/session', { method: 'DELETE', signal: AbortSignal.timeout(2000) }); } catch (e) {}
+  currentQuestion = '';
+  document.getElementById('questionBox').textContent = 'Hit "Generate Question" to begin your session.';
+  document.getElementById('answerBox').value = '';
+  document.getElementById('resultsCard').style.display = 'none';
+  document.getElementById('evalBtn').disabled = true;
+  scores = [];
+  updateStats();
+  showToast('Session reset.');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadTopics();
+fetch("http://127.0.0.1:5000/api/test")
+  .then(response => response.json())
+  .then(data => {
+    console.log(data);
+    document.body.innerHTML += "<h2>" + data.message + "</h2>";
+  })
+  .catch(error => console.log(error));
+</script>
+</body>
+</html>
